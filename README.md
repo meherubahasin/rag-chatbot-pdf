@@ -63,7 +63,7 @@ CONNECTION_STRING = "postgresql+psycopg2://<USER>:<PASSWORD>@<HOST>:<PORT>/<DATA
 
 Create a directory named `pdfs` in the root of the project and place your PDF files inside it.
 
-## ▶️ How to Run
+## How to Run
 
 1.  **Start the Chatbot**:
 
@@ -85,7 +85,7 @@ Create a directory named `pdfs` in the root of the project and place your PDF fi
       * **Upload a new document**: Type `upload` and press Enter. You will be prompted for the filename of a PDF located in the `./pdfs` directory.
       * **Exit**: Type `exit` to close the application.
 
-## 📄 File Breakdown
+## File Breakdown
 
 Here is a detailed explanation of each file in the project.
 
@@ -158,5 +158,3 @@ This file handles all aspects of data ingestion, processing, embedding, and stor
       * Takes the text content of a single chunk.
       * Calls `get_embedding()` from `local_ollama.py` to generate its vector embedding.
       * Executes an SQL `INSERT` command to store the content and its embedding in the PostgreSQL `pdf_embeddings` table.
-
-*(Note: The `ask_with_context` and `search_similar` functions in this file appear to be older versions of the more advanced implementations found in `agent.py`. The primary functions used by `main.py` are the `seed_*` functions.)*
