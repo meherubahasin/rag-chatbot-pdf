@@ -1,8 +1,0 @@
-psycopg2-binary==2.9.9
-SQLAlchemy==2.0.25
-langchain==0.2.6
-langchain-community==0.2.6
-langchain-ollama==0.1.0
-scikit-learn==1.4.2
-pypdf==4.2.0
-ollama==0.1.7
