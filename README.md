@@ -22,7 +22,7 @@ The chatbot operates through a clear, multi-stage process:
       * **Vector Search**: The embedding of the hypothetical answer is used to find semantically similar document chunks from PostgreSQL.
       * **BM25 Search**: The original query is used to find keyword-relevant document chunks using the BM25 index.
       * **Combine & Re-rank**: The results from both search methods are combined, and a `CrossEncoder` model re-ranks the candidates to find the top 5 most relevant documents.
-4.  **Generation (`local_ollama.py`)**: The top-ranked documents are compiled into a single context. This context, along with the original question, is passed to the Ollama LLM (`llama3.1`).
+4.  **Generation (`local_ollama.py`)**: The top-ranked documents are compiled into a single context. This context, along with the original question, is passed to the Ollama LLM (`granite3.2-vision:2b`).
 5.  **Structured Output**: The LLM is prompted to provide a strict JSON output containing the answer, a confidence score, and the source snippet, ensuring the answer is based solely on the provided context.
 6.  **Response**: The final answer is displayed to the user.
 
