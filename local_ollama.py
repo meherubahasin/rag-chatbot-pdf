@@ -1,43 +1,111 @@
 import json
-import ollama
-
+import requests
+import re
 
 def get_embedding(text: str):
     try:
-        response = ollama.embeddings(model="nomic-embed-text", prompt=text)
-        return response["embedding"]
+        # Use requests for embeddings as well for consistency and timeouts
+        payload = {"model": "nomic-embed-text", "prompt": text}
+        response = requests.post(
+            "http://localhost:11434/api/embeddings",
+            json=payload,
+            timeout=60 # Reduced timeout
+        )
+        response.raise_for_status()
+        return response.json()["embedding"]
     except Exception as e:
+        # Raise a specific ConnectionError for upstream handling
         raise ConnectionError(f"Failed to get embeddings from Ollama: {e}")
 
-def ask_ollama(context: str, question: str):
+def ask_ollama(context, question, model="granite3.2-vision:2b"):
+    """
+    Sends a question and context to the local Ollama API and returns a robust, clean JSON response.
+    """
+    system_prompt = f"""
+You are cooperative and accurate assistant.
+
+You must ALWAYS return responses in valid JSON format, and never include any text outside the JSON.
+
+Use ONLY the information from the provided context to answer the question.
+If the answer is not clearly available, respond with:
+"I couldn’t find that specific information in the document" and, then provide as much relevant information as possible from the context.
+If the answer is not clearly available in the context, you may use your pre-existing knowledge to answer the question, but you must clearly state that you are doing so.
+
+
+Output format (MANDATORY):
+{{
+  "answer": "string",
+  "confidence": float,
+  "source": "string"
+}}
+
+Example:
+{{
+  "answer": "There are four disciplinary actions listed: verbal warning, written warning, suspension, and termination.",
+  "confidence": 1.0,
+  "source": "Section 8: Disciplinary Actions"
+}}
+
+---
+Context:
+{context}
+
+User question:
+{question}
+---
+"""
+
+    payload = {
+        "model": model,
+        "prompt": system_prompt
+    }
+
+
     try:
-        system_prompt = """
-        You are a strict RAG assistant. Use ONLY the context provided to answer the question. Follow these steps:
-        1. Analyze the context and question carefully.
-        2. Identify relevant information in the context that directly addresses the question.
-        3. If the context does not contain enough information, state: "I cannot answer that based on the provided documents."
-        4. Provide a clear and concise answer in JSON format with the following structure:
-           {
-             "answer": "Your answer here",
-             "confidence": "A value between 0 and 1 indicating confidence in the answer",
-             "source": "Relevant snippet from the context or 'None' if no relevant information"
-           }
-        """
-        response = ollama.chat(
-            model="llama3.1",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Context:\n{context}\n\nQuestion: {question}"}
-            ]
+        response = requests.post(
+            "http://localhost:11434/api/generate",
+            json=payload,
+            timeout=60, # Reduced timeout
+            stream=True
         )
-        
-        return json.loads(response["message"]["content"].strip())
-    except json.JSONDecodeError as e:
-        print(f"Failed to parse JSON response from Ollama: {e}")
-        return {
-            "answer": "Sorry, I received a malformed response from the language model. Please try again.",
-            "confidence": "0",
-            "source": "None"
-        }
+        response.raise_for_status()
+
+        output_text = ""
+        for line in response.iter_lines():
+            if not line:
+                continue
+            try:
+                data = json.loads(line.decode("utf-8"))
+                if "response" in data:
+                    output_text += data["response"]
+            except json.JSONDecodeError:
+                continue
+
+        # --- JSON Cleanup Section ---
+        cleaned = re.sub(r"[\x00-\x1F\x7F]", "", output_text)
+        match = re.search(r"\{[\s\S]*\}", cleaned)
+        if match:
+            cleaned = match.group(0)
+        cleaned = cleaned.strip()
+
+        try:
+            parsed = json.loads(cleaned)
+            for key in ["answer", "confidence", "source"]:
+                if key not in parsed:
+                    parsed[key] = "" if key != "confidence" else 0.0
+            return parsed
+        except json.JSONDecodeError:
+            print("⚠️ Could not parse cleaned JSON, returning raw text.")
+            return {
+                "answer": cleaned,
+                "confidence": 0.0,
+                "source": "Parsing fallback"
+            }
+
     except Exception as e:
-        raise ConnectionError(f"Failed to get chat response from Ollama: {e}")
+        print(f"⚠️ Ollama request failed: {e}")
+        return {
+            "answer": f"Ollama request failed: {e}",
+            "confidence": 0.0,
+            "source": "Network error"
+        }
