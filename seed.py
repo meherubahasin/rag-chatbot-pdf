@@ -107,27 +107,27 @@ def seed_single_document(file_path):
     print(f"📄 Processing: {file_path.name}")
 
     if os.path.getsize(file_path) == 0:
-        print(f"⚠️ Skipping empty PDF: {file_path.name}")
+        print(f"Skipping empty PDF: {file_path.name}")
         return
 
     try:
         loader = PyPDFLoader(str(file_path))
         documents = loader.load()
     except Exception as e:
-        print(f"❌ Error loading {file_path.name}: {e}. Skipping.")
+        print(f"Error loading {file_path.name}: {e}. Skipping.")
         return
 
     all_chunks = []
     for doc in documents:
         if not doc.page_content.strip():
-            print(f"⚠️ Skipping empty page in {file_path.name}")
+            print(f"Skipping empty page in {file_path.name}")
             continue
 
         try:
             chunks = semantic_chunking_split(doc, threshold=0.8, min_chunk_size=300, overlap=250)
             all_chunks.extend(chunks)
         except Exception as e:
-            print(f"⚠️ Chunking failed for {file_path.name}: {e}")
+            print(f"Chunking failed for {file_path.name}: {e}")
 
     # Remove duplicate chunks
     unique_chunks = list({c.page_content: c for c in all_chunks}.values())
@@ -137,11 +137,11 @@ def seed_single_document(file_path):
             insert_chunk(chunk.page_content)
             bm25_docs.append(chunk)
             if i % 10 == 0:
-                print(f"✅ Inserted {i}/{len(unique_chunks)} chunks from {file_path.name}")
+                print(f"Inserted {i}/{len(unique_chunks)} chunks from {file_path.name}")
         except ConnectionError as ce:
-            print(f"⚠️ Skipping chunk due to Ollama connection issue: {ce}")
+            print(f"Skipping chunk due to Ollama connection issue: {ce}")
         except Exception as e:
-            print(f"❌ DB insert failed for {file_path.name} chunk {i}: {e}")
+            print(f"DB insert failed for {file_path.name} chunk {i}: {e}")
 
     print(f"🎯 Finished {file_path.name} — Total valid chunks: {len(unique_chunks)}")
 
