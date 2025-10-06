@@ -1,4 +1,3 @@
-
 import os
 from seed import seed_database, seed_single_document
 from agent import ask_with_context
@@ -9,7 +8,11 @@ def main():
     print("Welcome to the RAG Chatbot.")
     
     if not os.path.exists("bm25_index.pkl"):
+        print("-> BM25 index not found. Seeding the database...")
         seed_database()
+        print("-> Database seeded successfully.")
+    else:
+        print("-> BM25 index found. Skipping initial seeding.")
 
     while True:
         user_input = input("\nAsk a question about your documents (or 'exit' to quit, 'upload' to add a new PDF): ")
@@ -31,12 +34,13 @@ def main():
             end_time = time.time()
             print(f"Document '{file_name}' processed and added to the knowledge base in {end_time - start_time:.2f} seconds.")
             continue
-        
 
         answer = ask_with_context(user_input)
-        print(f"\nBot: {answer['answer']}")
-        print(f"Confidence: {answer['confidence']}")
-        print(f"Source: {answer['source']}")
+        
+        # **Handle the dictionary response from ask_with_context**
+        print(f"\nBot: {answer.get('answer', 'No answer received.')}")
+        print(f"Confidence: {answer.get('confidence', 'N/A')}")
+        print(f"Source: {answer.get('source', 'N/A')}")
 
 if __name__ == "__main__":
     main()
