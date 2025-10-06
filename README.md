@@ -35,7 +35,7 @@ The chatbot operates through a clear, multi-stage process:
   * Ollama installed and running.
   * Ollama models pulled:
     ```bash
-    ollama pull llama3.1
+    ollama pull granite3.2-vision:2b
     ollama pull nomic-embed-text
     ```
 
